@@ -1,0 +1,151 @@
+# CODSOFT
+An alarm app is a mobile application designed to help users manage their waking and reminder needs. Typically, it features customizable alarms, allowing users to set multiple alarms with different tones, snooze options, and labels. Many alarm apps also include additional functionalities.
+flutter create alarm_clock_app
+cd alarm_clock_app
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.0.1
+import 'package:flutter/material.dart';
+import 'screens/home_screen.dart';
+
+void main() {
+  runApp(AlarmClockApp());
+}
+
+class AlarmClockApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Alarm Clock',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: HomeScreen(),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'add_alarm_screen.dart';
+import 'manage_alarms_screen.dart';
+
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  Widget build(BuildContext context) {
+    String currentTime = DateFormat('hh:mm a').format(DateTime.now());
+    String currentDate = DateFormat('EEEE, MMM d, yyyy').format(DateTime.now());
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Alarm Clock'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(currentTime, style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Text(currentDate, style: TextStyle(fontSize: 24)),
+            SizedBox(height: 40),
+            ElevatedButton(
+              child: Text("Set New Alarm"),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddAlarmScreen()),
+                );
+              },
+            ),
+            ElevatedButton(
+              child: Text("Manage Alarms"),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ManageAlarmsScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+class AddAlarmScreen extends StatefulWidget {
+  @override
+  _AddAlarmScreenState createState() => _AddAlarmScreenState();
+}
+
+class _AddAlarmScreenState extends State<AddAlarmScreen> {
+  TimeOfDay selectedTime = TimeOfDay.now();
+
+  void _pickTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: selectedTime,
+    );
+    if (picked != null && picked != selectedTime) {
+      setState(() {
+        selectedTime = picked;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Set New Alarm")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: _pickTime,
+              child: Text("Select Time: ${selectedTime.format(context)}"),
+            ),
+            DropdownButton<String>(
+              items: ["Tone 1", "Tone 2", "Tone 3"].map((String tone) {
+                return DropdownMenuItem<String>(
+                  value: tone,
+                  child: Text(tone),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {},
+              hint: Text("Select Alarm Tone"),
+            ),
+            Spacer(),
+            ElevatedButton(
+              child: Text("Save Alarm"),
+              onPressed: () {
+                // Code to save the alarm
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+class ManageAlarmsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Manage Alarms"),
+      ),
+      body: ListView.builder(
+        itemCount: 5, // Replace with actual list of alarms
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Text("Alarm $
