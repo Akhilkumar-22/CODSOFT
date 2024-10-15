@@ -1,0 +1,113 @@
+//code for creatinating a university attendence app
+import 'package:firebase_auth/firebase_auth.dart';
+
+class AuthService {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Register user
+  Future<User?> registerWithEmailAndPassword(String email, String password) async {
+    try {
+      UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      User? user = result.user;
+      return user;
+    } catch (e) {
+      print(e.toString());
+      return null;
+    }
+  }
+
+  // Login user
+  Future<User?> signInWithEmailAndPassword(String email, String password) async {
+    try {
+      UserCredential result = await _auth.signInWithEmailAndPassword(email: email, password: password);
+      User? user = result.user;
+      return user;
+    } catch (e) {
+      print(e.toString());
+      return null;
+    }
+  }
+
+  // Logout
+  Future<void> signOut() async {
+    await _auth.signOut();
+  }
+}
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class CourseService {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  // Fetch courses for student
+  Stream<List<Course>> getCoursesForStudent(String studentId) {
+    return _db.collection('courses').where('students', arrayContains: studentId).snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => Course.fromFirestore(doc)).toList());
+  }
+
+  // Mark attendance
+  Future<void> markAttendance(String courseId, String studentId) async {
+    await _db.collection('courses').doc(courseId).collection('attendance').add({
+      'studentId': studentId,
+      'date': DateTime.now(),
+    });
+  }
+}
+// Add new course
+Future<void> addCourse(String instructorId, String courseName) async {
+  await _db.collection('courses').add({
+    'instructorId': instructorId,
+    'courseName': courseName,
+    'students': []
+  });
+}
+
+// Get student roster
+Stream<List<Student>> getStudentRoster(String courseId) {
+  return _db.collection('courses').doc(courseId).collection('students').snapshots().map((snapshot) =>
+      snapshot.docs.map((doc) => Student.fromFirestore(doc)).toList());
+}
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+class CourseListScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final courses = Provider.of<List<Course>>(context);
+
+    return Scaffold(
+      appBar: AppBar(title: Text('Courses')),
+      body: ListView.builder(
+        itemCount: courses.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Text(courses[index].courseName),
+            onTap: () => Navigator.pushNamed(context, '/attendance', arguments: courses[index]),
+          );
+        },
+      ),
+    );
+  }
+}
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /courses/{courseId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && get(/databases/{database}/documents/users/$(request.auth.uid)).data.role == 'instructor';
+    }
+
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+  }
+}
+Future<void> markAttendance(String courseId, String studentId) async {
+  try {
+    await _db.collection('courses').doc(courseId).collection('attendance').add({
+      'studentId': studentId,
+      'date': DateTime.now(),
+    });
+  } catch (error) {
+    print('Error marking attendance: $error');
+    // Show a snackbar or dialog with error message
+  }
+}
